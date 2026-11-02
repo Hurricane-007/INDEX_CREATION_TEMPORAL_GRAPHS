@@ -1,10 +1,13 @@
 #include "u_baseline.h"
 #include <fstream>
 #include <iostream>
+#include <queue>
 
 void UBaseline::freeIndex() {
     if (B) {
-        for (int ts = 0; ts <= tmax; ++ts) delete [] B[ts];
+        for (int ts = 0; ts <= tmax; ++ts) {
+            delete [] B[ts];
+        }
         delete [] B;
         B = nullptr;
     }
@@ -51,6 +54,7 @@ bool UBaseline::loadFromFile(const std::string& filename) {
         std::stringstream ss(line);
         int u, v, t;
         if (ss >> u >> v >> t) {
+            if (u == v) continue;
             edges.emplace_back(u, v, t);
             max_v = std::max(max_v, std::max(u, v));
         }
@@ -128,8 +132,7 @@ std::vector<std::vector<int>> UBaseline::query(int ts, int te) const {
     if (n == 0) return ccs;
     if (ts < 0 || ts > tmax || te < ts) {
         for (int v = 0; v < n; ++v) ccs.push_back({v});
-        return ccs 
-        ;
+        return ccs;
     }
 
     int effective_te = std::min(te, tmax);
@@ -190,20 +193,13 @@ std::vector<std::vector<int>> UBaseline::query(int ts, int te) const {
 }
 
 std::string UBaseline::solve(int ts, int te) const {
-    std::stringstream ans;
-    ans << "The spanned connected components in [" << ts << ", " << te << "] are:\n";
     auto ccs = query(ts, te);
-    for (const auto& cc : ccs) {
-        ans << "{ ";
-        for (int v : cc) ans << v << " ";
-        ans << "}\n";
-    }
-    return ans.str();
+    return formatCCs(ts, te, ccs);
 }
 
 // Incremental edge maintenance in O(n * tmax)
 void UBaseline::insertEdge(int u, int v, int t_new) {
-    if (u >= n || v >= n) return;
+    if (u >= n || v >= n || u == v) return;
 
     if (t_new > tmax) {
         auto** new_B = new std::vector<LabelTime>*[t_new + 1]();
@@ -251,5 +247,5 @@ unsigned long long UBaseline::size() const {
     for (int ts = 0; ts <= tmax; ++ts) {
         for (int v = 0; v < n; ++v) total_pairs += B[ts][v].size();
     }
-    return total_pairs * sizeof(LabelTime);
+    return total_pairs * sizeof(LabelTime) + (tmax + 1) * sizeof(std::vector<LabelTime>*) + (tmax + 1) * n * sizeof(std::vector<LabelTime>);
 }

@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"D:/BTP-1/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
